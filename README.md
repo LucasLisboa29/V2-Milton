@@ -23,6 +23,23 @@ python manage.py runserver
 
 Abra http://localhost:8000 e entre com o usuário criado.
 
+## Deploy na Vercel
+
+O disco da Vercel é apagado entre as requisições, então o banco precisa ser um **PostgreSQL externo** (o plano gratuito do [Neon](https://neon.tech) atende; dá para criar pela aba *Storage* da Vercel).
+
+1. Em *Settings → Environment Variables* do projeto na Vercel, crie:
+   - `DJANGO_SECRET_KEY`: um texto aleatório longo (gere com `python -c "import secrets; print(secrets.token_urlsafe(50))"`)
+   - `DATABASE_URL`: a URL de conexão do PostgreSQL (`postgresql://...`). Se o banco foi criado pela aba *Storage*, ela já vem preenchida.
+2. Rode as migrações e crie o usuário **do seu computador**, apontando para o banco de produção:
+   ```bash
+   set DATABASE_URL=postgresql://...      # Linux/macOS: export DATABASE_URL=...
+   python manage.py migrate
+   python manage.py createsuperuser
+   ```
+3. Faça *Redeploy* na Vercel.
+
+Na Vercel, o `DEBUG` fica desligado por padrão. Sem `DJANGO_SECRET_KEY` ou sem `DATABASE_URL`, o site não sobe e o log mostra qual variável falta.
+
 ## Testes
 
 ```bash

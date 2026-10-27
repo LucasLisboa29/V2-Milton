@@ -7,16 +7,27 @@ segredo no repositório). Os valores padrão servem só para desenvolvimento.
 import os
 from pathlib import Path
 
+import dj_database_url
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-DEBUG = os.environ.get('DJANGO_DEBUG', '1') == '1'
+# A Vercel define VERCEL=1 nos deploys. Lá o padrão é produção: DEBUG desligado,
+# senão qualquer erro mostraria configurações internas para quem acessar o site.
+NA_VERCEL = os.environ.get('VERCEL') == '1'
+
+DEBUG = os.environ.get('DJANGO_DEBUG', '0' if NA_VERCEL else '1') == '1'
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-apenas-nao-usar-em-producao')
 if not DEBUG and SECRET_KEY.startswith('dev-'):
     raise RuntimeError('Defina DJANGO_SECRET_KEY em produção.')
 
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+if NA_VERCEL:
+    ALLOWED_HOSTS.append('.vercel.app')  # domínio fixo e endereços de cada deploy
 CSRF_TRUSTED_ORIGINS = [o for o in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if o]
+
+# A Vercel recebe o HTTPS e repassa ao Django; este cabeçalho diz que a conexão original era segura.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [
     'django.contrib.auth',
@@ -29,6 +40,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # serve o CSS em produção
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -58,12 +70,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# Em produção, DATABASE_URL aponta para um PostgreSQL (ex.: Neon). Sem ela, usa SQLite local.
+# Na Vercel o disco é apagado a cada requisição, então SQLite lá perderia todos os dados.
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.environ.get('DJANGO_DB_PATH', BASE_DIR / 'db.sqlite3'),
-    }
+    'default': dj_database_url.config(
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        conn_max_age=0 if NA_VERCEL else 60,
+    )
 }
+if NA_VERCEL and DATABASES['default']['ENGINE'].endswith('sqlite3'):
+    raise RuntimeError('Defina DATABASE_URL (PostgreSQL) nas variáveis de ambiente da Vercel.')
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -80,6 +96,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+# Serve direto das pastas static/ dos apps, sem depender de collectstatic no build.
+WHITENOISE_USE_FINDERS = True
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
