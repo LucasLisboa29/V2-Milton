@@ -1,0 +1,10 @@
+{% if servico.aceita_lancamentos %}
+<div class="botoes">
+  <a class="botao secundario pequeno" href="{% url 'servicos:editar_lancamento' servico.pk tipo item.pk %}">Editar</a>
+  <form method="post" action="{% url 'servicos:remover' servico.pk tipo item.pk %}"
+        onsubmit="return confirm('Remover este lançamento?');">
+    {% csrf_token %}
+    <button type="submit" class="botao perigo pequeno">Remover</button>
+  </form>
+</div>
+{% endif %}

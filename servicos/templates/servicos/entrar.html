@@ -1,0 +1,20 @@
+{% extends 'servicos/base.html' %}
+{% block titulo %}Entrar · Custos por Serviço{% endblock %}
+{% block conteudo %}
+<h1>Custos por Serviço</h1>
+<form method="post" class="cartao">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    {% for erro in form.non_field_errors %}
+      {# Mensagem genérica: não revela se o usuário existe (UC01). #}
+      <p class="erro">{% if 'tentativas' in erro %}{{ erro }}{% else %}Usuário ou senha incorretos.{% endif %}</p>
+    {% endfor %}
+  {% endif %}
+  <label for="id_username">Usuário</label>
+  <input type="text" name="username" id="id_username" autocomplete="username" autocapitalize="none" required autofocus>
+  <label for="id_password">Senha</label>
+  <input type="password" name="password" id="id_password" autocomplete="current-password" required>
+  <input type="hidden" name="next" value="{{ next }}">
+  <div class="acoes"><button type="submit" class="botao largo">Entrar</button></div>
+</form>
+{% endblock %}

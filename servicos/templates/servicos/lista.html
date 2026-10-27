@@ -1,0 +1,43 @@
+{% extends 'servicos/base.html' %}
+{% load dinheiro %}
+{% block conteudo %}
+<div class="acoes"><a class="botao largo" href="{% url 'servicos:novo' %}">+ Novo serviço</a></div>
+
+<form class="busca" method="get">
+  <input type="text" name="busca" value="{{ busca }}" placeholder="Buscar pelo nome do cliente" aria-label="Buscar pelo nome do cliente">
+  <button type="submit" class="botao secundario">Buscar</button>
+</form>
+
+{% for servico, resumo in linhas %}
+  <a class="cartao servico-item" href="{% url 'servicos:detalhe' servico.pk %}">
+    <div class="linha1">
+      <span>{{ servico.cliente }}</span>
+      {% if resumo.resultado is not None %}
+        <span class="{% if resumo.prejuizo %}negativo{% else %}positivo{% endif %}">
+          {% if resumo.prejuizo %}Prejuízo {% endif %}{{ resumo.resultado|reais }}
+        </span>
+      {% endif %}
+    </div>
+    <div class="linha2">
+      <span>{{ servico.codigo }} · {{ servico.data|date:"d/m/Y" }} · {{ servico.get_local_display }}</span>
+      <span>{% if resumo.preco is not None %}{{ resumo.preco|reais }}{% endif %}</span>
+    </div>
+    <div class="linha2">
+      <span>{{ servico.descricao|truncatechars:60 }}</span>
+    </div>
+    <div style="margin-top:6px">
+      <span class="etiqueta">{{ servico.get_situacao_display }}</span>
+      {% if resumo.pendencias %}<span class="etiqueta pendencia">{{ resumo.pendencias|length }} pendência{{ resumo.pendencias|length|pluralize }}</span>{% endif %}
+    </div>
+  </a>
+{% empty %}
+  <div class="cartao vazio">
+    {% if busca %}
+      <p>Nenhum serviço encontrado para "{{ busca }}".</p>
+    {% else %}
+      <p>Nenhum serviço cadastrado ainda.</p>
+      <a class="botao" href="{% url 'servicos:novo' %}">Novo serviço</a>
+    {% endif %}
+  </div>
+{% endfor %}
+{% endblock %}

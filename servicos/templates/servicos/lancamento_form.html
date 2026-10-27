@@ -1,0 +1,11 @@
+{% extends 'servicos/base.html' %}
+{% block conteudo %}
+<h1>Editar {{ tipo }} · {{ servico.codigo }}</h1>
+<form method="post" class="cartao" novalidate>
+  {% include 'servicos/_campos.html' %}
+  <div class="acoes">
+    <a class="botao secundario" href="{% url 'servicos:detalhe' servico.pk %}">Cancelar</a>
+    <button type="submit" class="botao">Salvar</button>
+  </div>
+</form>
+{% endblock %}

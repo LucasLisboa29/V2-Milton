@@ -1,0 +1,15 @@
+{% csrf_token %}
+{% for oculto in form.hidden_fields %}{{ oculto }}{% endfor %}
+{% for campo in form.visible_fields %}
+  <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+  {{ campo }}
+  {% for erro in campo.errors %}<p class="erro">{{ erro }}</p>{% endfor %}
+  {% if campo.name == 'tempo' and form.opcoes_tempo %}
+    {# UC06-A1: "230" sem unidade -> o Divino escolhe a interpretação. #}
+    <div class="acoes">
+      {% for texto, minutos in form.opcoes_tempo %}
+        <button type="submit" name="tempo" value="{{ texto }}" class="botao secundario">{{ texto }}</button>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endfor %}

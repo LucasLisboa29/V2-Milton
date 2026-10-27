@@ -1,0 +1,20 @@
+{% extends 'servicos/base.html' %}
+{% block conteudo %}
+<h1>{% if servico %}Editar {{ servico.codigo }}{% else %}Novo serviço{% endif %}</h1>
+<form method="post" class="cartao" novalidate>
+  {% csrf_token %}
+  {{ form.versao }}
+  {% for campo in form.visible_fields %}
+    <div {% if campo.name == 'local' %}class="radios"{% endif %}>
+      <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+      {{ campo }}
+      {% for erro in campo.errors %}<p class="erro">{{ erro }}</p>{% endfor %}
+    </div>
+  {% endfor %}
+  <datalist id="clientes">{% for nome in clientes %}<option value="{{ nome }}">{% endfor %}</datalist>
+  <div class="acoes">
+    <a class="botao secundario" href="{% if servico %}{% url 'servicos:detalhe' servico.pk %}{% else %}{% url 'servicos:lista' %}{% endif %}">Cancelar</a>
+    <button type="submit" class="botao">Salvar</button>
+  </div>
+</form>
+{% endblock %}

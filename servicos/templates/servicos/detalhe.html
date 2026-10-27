@@ -1,0 +1,112 @@
+{% extends 'servicos/base.html' %}
+{% load dinheiro %}
+{% block titulo %}{{ servico.codigo }} · Custos por Serviço{% endblock %}
+{% block conteudo %}
+<h1>{{ servico.codigo }} · {{ servico.cliente }}</h1>
+<p class="nota">
+  {{ servico.data|date:"d/m/Y" }} · {{ servico.get_local_display }} · <span class="etiqueta">{{ servico.get_situacao_display }}</span>
+  {% if servico.cliente.telefone %}· {{ servico.cliente.telefone }}{% endif %}
+</p>
+<p>{{ servico.descricao }}</p>
+{% if servico.observacoes %}<p class="nota">{{ servico.observacoes }}</p>{% endif %}
+<div class="acoes"><a class="botao secundario" href="{% url 'servicos:editar' servico.pk %}">Editar serviço</a></div>
+
+{# ---------------------------------------------------------- resumo (T04) #}
+<section class="cartao">
+  <h2>Resumo</h2>
+  <table class="resumo">
+    <tr><td>Materiais</td><td>{{ resumo.materiais|reais }}</td></tr>
+    <tr><td>Deslocamento</td><td>{% if resumo.deslocamento is None %}não se aplica{% else %}{{ resumo.deslocamento|reais }}{% endif %}</td></tr>
+    <tr><td>Mão de obra{% if resumo.minutos_totais %} ({{ resumo.minutos_totais|duracao }}){% endif %}</td><td>{{ resumo.mao_de_obra|reais }}</td></tr>
+    <tr class="total"><td>Custo total</td><td>{{ resumo.custo_total|reais }}</td></tr>
+    <tr><td>Preço cobrado</td><td>{{ resumo.preco|reais }}</td></tr>
+  </table>
+  {% if resumo.resultado is not None %}
+    <p class="resultado {% if resumo.prejuizo %}negativo{% else %}positivo{% endif %}">
+      {% if resumo.prejuizo %}Prejuízo: {{ resumo.resultado|reais }}{% else %}Resultado do serviço: {{ resumo.resultado|reais }}{% endif %}
+    </p>
+  {% endif %}
+  <p class="nota">Resultado do serviço: aluguel, luz e outras despesas fixas não entram nesta conta.</p>
+
+  <form method="post" action="{% url 'servicos:preco' servico.pk %}" novalidate>
+    {% with form=form_preco %}{% include 'servicos/_campos.html' %}{% endwith %}
+    <div class="acoes"><button type="submit" class="botao">Salvar preço</button></div>
+  </form>
+</section>
+
+{% if resumo.pendencias %}
+<section class="cartao pendencias">
+  <strong>Faltam informações</strong>
+  <ul>{% for p in resumo.pendencias %}<li>{{ p }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+{# ------------------------------------------------------------ materiais #}
+<section class="cartao" id="materiais">
+  <h2>Materiais · {{ resumo.materiais|reais }}</h2>
+  {% for m in servico.materiais.all %}
+    <div class="lancamento">
+      <div><div>{{ m.descricao }}</div><div class="conta">{{ m.conta }}</div></div>
+      {% include 'servicos/_botoes_lancamento.html' with tipo='material' item=m %}
+    </div>
+  {% endfor %}
+  {% if servico.aceita_lancamentos %}
+  <details class="lancar" {% if aberto == 'material' %}open{% endif %}>
+    <summary class="botao largo">+ Material</summary>
+    <form method="post" action="{% url 'servicos:adicionar' servico.pk 'material' %}" novalidate>
+      {% with form=form_material %}{% include 'servicos/_campos.html' %}{% endwith %}
+      <div class="acoes"><button type="submit" class="botao">Salvar material</button></div>
+    </form>
+  </details>
+  {% endif %}
+</section>
+
+{# --------------------------------------------------------- deslocamento #}
+{% if servico.local == 'EXTERNO' or servico.deslocamentos.all %}
+<section class="cartao" id="deslocamento">
+  <h2>Deslocamento · {% if resumo.deslocamento is None %}não se aplica{% else %}{{ resumo.deslocamento|reais }}{% endif %}</h2>
+  {% if servico.local != 'EXTERNO' %}
+    <p class="nota">O serviço é na oficina, então estes km não entram no custo. Eles voltam a contar se o serviço passar a externo.</p>
+  {% endif %}
+  {% for d in servico.deslocamentos.all %}
+    <div class="lancamento">
+      <div><div>{{ d.data|date:"d/m/Y" }}</div><div class="conta">{{ d.conta }}</div></div>
+      {% include 'servicos/_botoes_lancamento.html' with tipo='deslocamento' item=d %}
+    </div>
+  {% endfor %}
+  {% if servico.local == 'EXTERNO' and servico.aceita_lancamentos %}
+  <details class="lancar" {% if aberto == 'deslocamento' %}open{% endif %}>
+    <summary class="botao largo">+ Km</summary>
+    <form method="post" action="{% url 'servicos:adicionar' servico.pk 'deslocamento' %}" novalidate>
+      {% with form=form_deslocamento %}{% include 'servicos/_campos.html' %}{% endwith %}
+      <p class="nota">Valor atual: {{ config.valor_km_centavos|reais }} por km.</p>
+      <div class="acoes"><button type="submit" class="botao">Salvar km</button></div>
+    </form>
+  </details>
+  {% endif %}
+</section>
+{% endif %}
+
+{# ---------------------------------------------------------------- horas #}
+<section class="cartao" id="horas">
+  <h2>Mão de obra · {{ resumo.mao_de_obra|reais }}</h2>
+  {% for t in servico.tempos.all %}
+    <div class="lancamento">
+      <div><div>{{ t.minutos|duracao }}</div><div class="conta">{{ t.conta }}</div></div>
+      {% include 'servicos/_botoes_lancamento.html' with tipo='tempo' item=t %}
+    </div>
+  {% endfor %}
+  {% if servico.aceita_lancamentos %}
+  <details class="lancar" {% if aberto == 'tempo' %}open{% endif %}>
+    <summary class="botao largo">+ Horas</summary>
+    <form method="post" action="{% url 'servicos:adicionar' servico.pk 'tempo' %}" novalidate>
+      {% with form=form_tempo %}{% include 'servicos/_campos.html' %}{% endwith %}
+      <p class="nota">Exemplos: 2h30, 2:30, 150 min. Valor atual: {{ config.valor_hora_centavos|reais }} por hora.</p>
+      <div class="acoes"><button type="submit" class="botao">Salvar horas</button></div>
+    </form>
+  </details>
+  {% endif %}
+</section>
+
+<div class="acoes"><a class="botao secundario largo" href="{% url 'servicos:lista' %}">Voltar à lista</a></div>
+{% endblock %}

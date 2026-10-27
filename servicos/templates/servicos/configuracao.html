@@ -1,0 +1,18 @@
+{% extends 'servicos/base.html' %}
+{% block conteudo %}
+<h1>Meus valores</h1>
+<form method="post" class="cartao" novalidate>
+  {% csrf_token %}
+  {% for campo in form %}
+    <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+    {{ campo }}
+    {% for erro in campo.errors %}<p class="erro">{{ erro }}</p>{% endfor %}
+  {% endfor %}
+  <p class="nota">Mudar estes valores não altera os lançamentos já feitos: cada lançamento guarda o valor do dia em que foi registrado.</p>
+  <p class="nota">Última alteração: {{ config.atualizado_em|date:"d/m/Y H:i" }}</p>
+  <div class="acoes">
+    <a class="botao secundario" href="{% url 'servicos:lista' %}">Cancelar</a>
+    <button type="submit" class="botao">Salvar</button>
+  </div>
+</form>
+{% endblock %}

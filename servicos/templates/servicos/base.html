@@ -1,0 +1,34 @@
+{% load static %}<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Custos por Serviço{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'servicos/estilo.css' %}">
+</head>
+<body>
+  {% if user.is_authenticated %}
+  <header class="topo">
+    <a class="marca" href="{% url 'servicos:lista' %}">Custos por Serviço</a>
+    <a href="{% url 'servicos:configuracao' %}">Valores</a>
+    <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit">Sair</button></form>
+  </header>
+  {% endif %}
+  <main>
+    {% if messages %}
+    <ul class="mensagens">
+      {% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+    {% block conteudo %}{% endblock %}
+  </main>
+  <script>
+    // Evita o toque duplo no celular: desativa o botão depois do primeiro envio.
+    // O servidor também protege com a chave de idempotência (RNF-04).
+    document.addEventListener('submit', function (e) {
+      var botao = e.target.querySelector('button[type=submit]');
+      if (botao && !e.defaultPrevented) { setTimeout(function () { botao.disabled = true; }, 0); }
+    });
+  </script>
+</body>
+</html>
