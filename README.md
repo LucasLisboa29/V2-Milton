@@ -4,6 +4,8 @@ Sistema web (para celular) que soma materiais, deslocamento e horas de cada serv
 
 Projeto da V2 de **Projeto e Desenvolvimento de Software** (2026/2), feito a partir da especificação do Grupo 2 (*Especificação de Software — Gestão de Custos por Serviço do Divino*, v1.0). Os códigos entre parênteses (RN-05, CT-08...) remetem a essa especificação.
 
+> **Para a equipe:** o [Mapa do projeto](docs/MAPA_DO_PROJETO.md) explica onde está cada coisa, o que cada arquivo faz, onde está cada história e as perguntas que o professor pode fazer.
+
 ## Stack
 
 - Python 3.12 + Django 5.2 (telas renderizadas no servidor, sem framework de front-end)
