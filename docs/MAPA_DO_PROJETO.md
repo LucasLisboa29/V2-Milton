@@ -62,6 +62,7 @@ O `dominio.py` não conhece Django nem banco: recebe números e devolve números
 | `Configuracao` | Valor por km e valor da hora | Uma linha só; `atual()` pega ou cria |
 | `Cliente` | Nome e telefone | `nome_busca` sem acento: "joao" acha "João"; `obter_ou_criar` evita cliente repetido (D-03) |
 | `Servico` | O atendimento | `preco_centavos`, `local`, `situacao`, `versao`; `resumo()` chama o `dominio` |
+| `EventoServico` | Histórico de situação | Situação anterior/nova, motivo, usuário e data da mudança (US-09) |
 | `Material` | Lançamento de material | `conta` monta o texto "2 × R$ 15,50 = R$ 31,00" |
 | `Deslocamento` | Lançamento de km | Guarda `valor_km_centavos` **copiado** no dia (RN-05) |
 | `Tempo` | Lançamento de horas | Guarda `valor_hora_centavos` **copiado** no dia (RN-05) |
@@ -80,6 +81,7 @@ Nenhum total fica gravado no banco. O resumo é sempre recalculado a partir dos 
 | `editar` | Editar serviço; confere a `versao`; avisa se externo virou oficina | US-07 |
 | `detalhe` | Tela do serviço com resumo e lançamentos | US-06 |
 | `definir_preco` | Salvar o preço cobrado | US-06 |
+| `alterar_situacao` | Concluir, reabrir ou cancelar; registra o evento | US-09 |
 | `adicionar_lancamento` | + Material / + Km / + Horas (com trava e anti-duplicação) | US-03, 04, 05 |
 | `editar_lancamento` / `remover_lancamento` | Editar ou remover um lançamento | US-07 |
 | `_aplicar` | Copia o valor do km/hora **só na criação**; editar mantém o valor antigo | RN-05 |
@@ -176,6 +178,6 @@ O Claude Code leu a especificação do Grupo 2, propôs a estrutura e gerou o c�
 **Por que Django?**
 Já traz login, banco e formulários prontos, o que coube no prazo de um Sprint. O `Decimal` do Python resolve a precisão do dinheiro.
 
-## 6. O que fica para o Sprint 2
+## 6. Sprint 2
 
-Situação do serviço (concluir, reabrir, cancelar), recebimentos e lista "a receber", orçamento, painel do mês, excluir serviço, filtros por período e situação, recuperação de acesso. Lista completa no `README.md`.
+US-09 Situação do serviço está implementada. Recebimentos e lista "a receber", orçamento, painel do mês, excluir serviço, filtros por período e situação e recuperação de acesso ficam para as próximas histórias. Lista completa no `README.md`.

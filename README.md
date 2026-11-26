@@ -86,7 +86,7 @@ Meta: *"O Divino lança um serviço completo e vê o resultado."*
 
 ## Sprint 2 — a fazer
 
-- [ ] US-09 Situação do serviço: concluir, reabrir, cancelar (com motivo) e histórico de eventos
+- [x] US-09 Situação do serviço: concluir, reabrir, cancelar (com motivo) e histórico de eventos
 - [ ] US-10 Recebimentos e lista "a receber"
 - [ ] US-11 Orçamento (aprovar / recusar)
 - [ ] US-12 Painel do mês
@@ -103,3 +103,13 @@ Meta: *"O Divino lança um serviço completo e vê o resultado."*
 4. **+ Horas**: 1h30 e depois 0h45 → R$ 135,00.
 5. Preço cobrado 350,00 → custo R$ 238,00 e **resultado R$ 112,00**.
 6. Em **Valores**, mudar a hora para 70,00 e voltar ao serviço: o resultado continua R$ 112,00.
+
+## Testar US-09 — situação do serviço
+
+1. Entre no sistema e abra um serviço **Em andamento**.
+2. Toque em **Concluir serviço**. A situação muda para **Concluído** e o histórico registra a mudança, data e usuário.
+3. Toque em **Reabrir serviço**. A situação volta para **Em andamento** e uma nova linha aparece no histórico.
+4. Abra **Cancelar serviço**, informe um motivo e confirme. A situação muda para **Cancelado**; o motivo aparece no histórico e os lançamentos ficam bloqueados.
+5. Tente cancelar sem motivo: o formulário mostra uma validação e o estado não muda.
+
+Regras: serviços em andamento podem ser concluídos ou cancelados; concluídos podem ser reabertos ou cancelados; cancelados não podem ser reabertos. Cada transição é enviada por POST e registrada no histórico.

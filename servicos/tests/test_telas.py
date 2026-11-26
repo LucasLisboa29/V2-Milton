@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
-from servicos.models import Cliente, Configuracao, Servico, Tempo
+from servicos.models import Cliente, Configuracao, EventoServico, Servico, Tempo
 
 
 class Base(TestCase):
@@ -220,3 +220,55 @@ class LancamentoTest(Base):
         tempo = a.tempos.get()
         resposta = self.client.get(reverse('servicos:editar_lancamento', args=[b.pk, 'tempo', tempo.pk]))
         self.assertEqual(resposta.status_code, 404)
+
+
+class SituacaoServicoTest(Base):
+    def test_concluir_e_reabrir_registra_historico(self):
+        servico = self.criar_servico(local='OFICINA')
+
+        resposta = self.client.post(reverse('servicos:situacao', args=[servico.pk, 'concluir']))
+        self.assertRedirects(resposta, reverse('servicos:detalhe', args=[servico.pk]))
+        servico.refresh_from_db()
+        self.assertEqual(servico.situacao, Servico.Situacao.CONCLUIDO)
+        evento = servico.eventos.get()
+        self.assertEqual(evento.situacao_anterior, Servico.Situacao.EM_ANDAMENTO)
+        self.assertEqual(evento.situacao_nova, Servico.Situacao.CONCLUIDO)
+        self.assertEqual(evento.usuario, self.usuario)
+
+        self.client.post(reverse('servicos:situacao', args=[servico.pk, 'reabrir']))
+        servico.refresh_from_db()
+        self.assertEqual(servico.situacao, Servico.Situacao.EM_ANDAMENTO)
+        self.assertEqual(servico.eventos.count(), 2)
+
+    def test_cancelar_exige_motivo_e_registra_evento(self):
+        servico = self.criar_servico(local='OFICINA')
+        url = reverse('servicos:situacao', args=[servico.pk, 'cancelar'])
+
+        resposta = self.client.post(url, {'motivo': '   '})
+        self.assertEqual(resposta.status_code, 422)
+        servico.refresh_from_db()
+        self.assertEqual(servico.situacao, Servico.Situacao.EM_ANDAMENTO)
+        self.assertFalse(servico.eventos.exists())
+
+        self.client.post(url, {'motivo': ' Cliente desistiu '})
+        servico.refresh_from_db()
+        evento = servico.eventos.get()
+        self.assertEqual(servico.situacao, Servico.Situacao.CANCELADO)
+        self.assertEqual(evento.motivo, 'Cliente desistiu')
+        self.assertEqual(evento.situacao_anterior, Servico.Situacao.EM_ANDAMENTO)
+
+    def test_transicoes_invalidas_sao_recusadas(self):
+        servico = self.criar_servico(local='OFICINA')
+
+        resposta = self.client.post(reverse('servicos:situacao', args=[servico.pk, 'reabrir']))
+        self.assertRedirects(resposta, reverse('servicos:detalhe', args=[servico.pk]))
+        servico.refresh_from_db()
+        self.assertEqual(servico.situacao, Servico.Situacao.EM_ANDAMENTO)
+        self.assertFalse(servico.eventos.exists())
+
+        self.client.post(reverse('servicos:situacao', args=[servico.pk, 'cancelar']), {'motivo': 'Encerrado'})
+        resposta = self.client.post(reverse('servicos:situacao', args=[servico.pk, 'reabrir']))
+        self.assertRedirects(resposta, reverse('servicos:detalhe', args=[servico.pk]))
+        servico.refresh_from_db()
+        self.assertEqual(servico.situacao, Servico.Situacao.CANCELADO)
+        self.assertEqual(servico.eventos.count(), 1)

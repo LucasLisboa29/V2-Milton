@@ -11,6 +11,42 @@
 {% if servico.observacoes %}<p class="nota">{{ servico.observacoes }}</p>{% endif %}
 <div class="acoes"><a class="botao secundario" href="{% url 'servicos:editar' servico.pk %}">Editar serviço</a></div>
 
+<section class="cartao">
+  <h2>Situação do serviço</h2>
+  {% if servico.situacao == 'EM_ANDAMENTO' %}
+    <div class="acoes">
+      <form method="post" action="{% url 'servicos:situacao' servico.pk 'concluir' %}">{% csrf_token %}<button class="botao" type="submit">Concluir serviço</button></form>
+    </div>
+  {% elif servico.situacao == 'CONCLUIDO' %}
+    <div class="acoes">
+      <form method="post" action="{% url 'servicos:situacao' servico.pk 'reabrir' %}">{% csrf_token %}<button class="botao secundario" type="submit">Reabrir serviço</button></form>
+    </div>
+  {% endif %}
+  {% if servico.situacao != 'CANCELADO' %}
+    <details class="lancar">
+      <summary class="botao perigo largo">Cancelar serviço</summary>
+      <form method="post" action="{% url 'servicos:situacao' servico.pk 'cancelar' %}" novalidate>
+        {% csrf_token %}
+        {% with form=form_cancelamento %}{% include 'servicos/_campos.html' %}{% endwith %}
+        <div class="acoes"><button type="submit" class="botao perigo">Confirmar cancelamento</button></div>
+      </form>
+    </details>
+  {% endif %}
+</section>
+
+<section class="cartao">
+  <h2>Histórico de situação</h2>
+  {% for evento in servico.eventos.all %}
+    <div class="evento">
+      <strong>{% if evento.situacao_anterior %}{{ evento.get_situacao_anterior_display }} → {% endif %}{{ evento.get_situacao_nova_display }}</strong>
+      <div class="nota">{{ evento.criado_em|date:"d/m/Y H:i" }}{% if evento.usuario %} · {{ evento.usuario.get_username }}{% endif %}</div>
+      {% if evento.motivo %}<div>{{ evento.motivo }}</div>{% endif %}
+    </div>
+  {% empty %}
+    <p class="nota">Nenhuma mudança de situação registrada.</p>
+  {% endfor %}
+</section>
+
 {# ---------------------------------------------------------- resumo (T04) #}
 <section class="cartao">
   <h2>Resumo</h2>

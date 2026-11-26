@@ -3,13 +3,15 @@ from django.contrib.auth import views as auth_views
 from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from django.db.models import F
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from . import dominio
 from .forms import (ConfiguracaoForm, DecisaoOrcamentoForm, DeslocamentoForm, MaterialForm, PrecoForm, RecebimentoForm, ServicoForm, TempoForm,
                     centavos_para_texto)
-from .models import Cliente, Configuracao, Deslocamento, Material, Recebimento, Servico, Tempo, normalizar
+from .forms import MotivoCancelamentoForm
+from .models import Cliente, Configuracao, Deslocamento, EventoServico, Material, Recebimento, Servico, Tempo, normalizar
 
 # ------------------------------------------------------------------ acesso
 
@@ -196,9 +198,43 @@ def detalhe(request, pk, forms_com_erro=None):
         'form_recebimento': RecebimentoForm(),
         'em_aberto': max(0, (servico.preco_centavos or 0) - sum(r.valor_centavos for r in servico.recebimentos.all())),
         'aberto': next(iter(forms_com_erro), ''),
+        'form_cancelamento': forms_com_erro.get('cancelamento', MotivoCancelamentoForm()),
     }
     status = 422 if forms_com_erro else 200
     return render(request, 'servicos/detalhe.html', contexto, status=status)
+
+
+@require_POST
+def alterar_situacao(request, pk, acao):
+    """Aplica transições permitidas e registra cada mudança (US-09)."""
+    transicoes = {
+        'concluir': (Servico.Situacao.EM_ANDAMENTO, Servico.Situacao.CONCLUIDO),
+        'reabrir': (Servico.Situacao.CONCLUIDO, Servico.Situacao.EM_ANDAMENTO),
+        'cancelar': (None, Servico.Situacao.CANCELADO),
+    }
+    if acao not in transicoes:
+        raise Http404
+    form = MotivoCancelamentoForm(request.POST) if acao == 'cancelar' else None
+    if form and not form.is_valid():
+        return detalhe(request, pk, {'cancelamento': form})
+    with transaction.atomic():
+        servico = get_object_or_404(Servico.objects.select_for_update(), pk=pk)
+        anterior, nova = transicoes[acao]
+        permitido = (servico.situacao != Servico.Situacao.CANCELADO
+                     if acao == 'cancelar' else servico.situacao == anterior)
+        if not permitido:
+            messages.error(request, 'Essa mudança de situação não é permitida para o estado atual.')
+            return redirect('servicos:detalhe', pk=pk)
+        situacao_anterior = servico.situacao
+        servico.situacao = nova
+        servico.versao = F('versao') + 1
+        servico.save(update_fields=['situacao', 'versao'])
+        EventoServico.objects.create(
+            servico=servico, situacao_anterior=situacao_anterior, situacao_nova=nova,
+            motivo=form.cleaned_data['motivo'] if form else '', usuario=request.user,
+        )
+    messages.success(request, f'Situação atualizada para {servico.get_situacao_display()}.')
+    return redirect('servicos:detalhe', pk=pk)
 
 
 @require_POST

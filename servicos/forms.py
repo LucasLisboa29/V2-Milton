@@ -114,6 +114,20 @@ class PrecoForm(forms.Form):
         return _ler('preco', dominio.ler_dinheiro, self.cleaned_data['preco'])
 
 
+class MotivoCancelamentoForm(forms.Form):
+    motivo = forms.CharField(
+        label='Motivo do cancelamento', max_length=500,
+        widget=forms.Textarea(attrs={'rows': 2}),
+        error_messages={'required': 'Informe o motivo do cancelamento.'},
+    )
+
+    def clean_motivo(self):
+        motivo = ' '.join(self.cleaned_data['motivo'].split())
+        if not motivo:
+            raise forms.ValidationError('Informe o motivo do cancelamento.')
+        return motivo
+
+
 class ConfiguracaoForm(forms.Form):
     valor_km = _campo_texto('Valor por km (R$)', '1,20')
     valor_hora = _campo_texto('Valor da hora (R$)', '60,00')

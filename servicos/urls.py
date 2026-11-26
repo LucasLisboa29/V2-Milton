@@ -28,6 +28,7 @@ urlpatterns = [
     path('a-receber/', views.a_receber, name='a_receber'),
     path('servicos/<int:pk>/recebimentos/', views.adicionar_recebimento, name='recebimento'),
     path('servicos/<int:pk>/orcamento/', views.decidir_orcamento, name='decidir_orcamento'),
+    path('servicos/<int:pk>/situacao/<str:acao>/', views.alterar_situacao, name='situacao'),
     path('servicos/<int:pk>/<tipo:tipo>/', views.adicionar_lancamento, name='adicionar'),
     path('servicos/<int:pk>/<tipo:tipo>/<int:lid>/', views.editar_lancamento, name='editar_lancamento'),
     path('servicos/<int:pk>/<tipo:tipo>/<int:lid>/remover/', views.remover_lancamento, name='remover'),
