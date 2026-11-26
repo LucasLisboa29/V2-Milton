@@ -79,6 +79,12 @@ class Servico(models.Model):
     situacao = models.CharField(max_length=15, choices=Situacao.choices, default=Situacao.EM_ANDAMENTO)
     preco_centavos = models.PositiveIntegerField(null=True, blank=True)
     observacoes = models.TextField(blank=True)
+    class Orcamento(models.TextChoices):
+        PENDENTE = 'PENDENTE', 'Orçamento pendente'
+        APROVADO = 'APROVADO', 'Aprovado'
+        RECUSADO = 'RECUSADO', 'Recusado'
+    situacao_orcamento = models.CharField(max_length=10, choices=Orcamento.choices, null=True, blank=True)
+    recebido_centavos = models.PositiveIntegerField(default=0)
     # Incrementada a cada alteração, para não sobrescrever edição feita em outra aba (UC08-E2).
     versao = models.PositiveIntegerField(default=1)
     criado_em = models.DateTimeField(auto_now_add=True)
@@ -168,3 +174,13 @@ class Tempo(Lancamento):
     def conta(self):
         return (f'{dominio.formatar_minutos(self.minutos)} × '
                 f'{dominio.formatar_reais(self.valor_hora_centavos)}/h = {dominio.formatar_reais(self.custo)}')
+
+
+class Recebimento(models.Model):
+    servico = models.ForeignKey(Servico, on_delete=models.CASCADE, related_name='recebimentos')
+    valor_centavos = models.PositiveIntegerField()
+    data = models.DateField(default=timezone.localdate)
+    observacao = models.CharField(max_length=200, blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        ordering = ['-data', '-id']

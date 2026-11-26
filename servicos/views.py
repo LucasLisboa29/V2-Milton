@@ -7,9 +7,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from . import dominio
-from .forms import (ConfiguracaoForm, DeslocamentoForm, MaterialForm, PrecoForm, ServicoForm, TempoForm,
+from .forms import (ConfiguracaoForm, DecisaoOrcamentoForm, DeslocamentoForm, MaterialForm, PrecoForm, RecebimentoForm, ServicoForm, TempoForm,
                     centavos_para_texto)
-from .models import Cliente, Configuracao, Deslocamento, Material, Servico, Tempo, normalizar
+from .models import Cliente, Configuracao, Deslocamento, Material, Recebimento, Servico, Tempo, normalizar
 
 # ------------------------------------------------------------------ acesso
 
@@ -75,6 +75,48 @@ def lista(request):
     return render(request, 'servicos/lista.html', {'linhas': linhas, 'busca': busca})
 
 
+def a_receber(request):
+    servicos = Servico.objects.filter(preco_centavos__gt=0).exclude(situacao='CANCELADO').prefetch_related('recebimentos')
+    linhas = [(s, max(0, s.preco_centavos - sum(r.valor_centavos for r in s.recebimentos.all()))) for s in servicos]
+    return render(request, 'servicos/a_receber.html', {'linhas': [(s,v) for s,v in linhas if v > 0]})
+
+
+@require_POST
+def adicionar_recebimento(request, pk):
+    form=RecebimentoForm(request.POST)
+    servico=get_object_or_404(Servico,pk=pk)
+    if form.is_valid():
+        Recebimento.objects.create(servico=servico, valor_centavos=form.cleaned_data['valor'], data=form.cleaned_data['data'], observacao=form.cleaned_data['observacao'])
+        total=sum(r.valor_centavos for r in servico.recebimentos.all())+form.cleaned_data['valor']
+        if servico.preco_centavos and total >= servico.preco_centavos:
+            servico.situacao=Servico.Situacao.RECEBIDO
+            servico.save(update_fields=['situacao'])
+        messages.success(request,'Recebimento registrado.')
+    else:
+        messages.error(request,'Informe um valor e uma data válidos.')
+    return redirect('servicos:detalhe',pk=pk)
+
+
+@require_POST
+def decidir_orcamento(request, pk):
+    if request.method != 'POST':
+        return redirect('servicos:detalhe', pk=pk)
+    form = DecisaoOrcamentoForm(request.POST)
+    with transaction.atomic():
+        servico = get_object_or_404(Servico.objects.select_for_update(), pk=pk)
+        if (not form.is_valid() or servico.situacao != Servico.Situacao.ORCAMENTO
+                or servico.situacao_orcamento != Servico.Orcamento.PENDENTE):
+            messages.error(request, 'Este orçamento não está pendente ou a decisão é inválida.')
+        else:
+            servico.situacao_orcamento = form.cleaned_data['decisao']
+            if servico.situacao_orcamento == Servico.Orcamento.APROVADO:
+                servico.situacao = Servico.Situacao.EM_ANDAMENTO
+            servico.versao = F('versao') + 1
+            servico.save(update_fields=['situacao_orcamento', 'situacao', 'versao'])
+            messages.success(request, 'Decisão do orçamento registrada.')
+    return redirect('servicos:detalhe',pk=pk)
+
+
 def _contexto_form_servico(form, servico=None):
     return {'form': form, 'servico': servico, 'clientes': Cliente.objects.values_list('nome', flat=True)}
 
@@ -89,6 +131,8 @@ def novo(request):
                 cliente=Cliente.obter_ou_criar(dados['cliente'], dados['telefone']),
                 descricao=dados['descricao'], data=dados['data'], local=dados['local'],
                 observacoes=dados['observacoes'],
+                situacao=Servico.Situacao.ORCAMENTO if dados['como_orcamento'] else Servico.Situacao.EM_ANDAMENTO,
+                situacao_orcamento=Servico.Orcamento.PENDENTE if dados['como_orcamento'] else None,
             )
             messages.success(request, f'Serviço {servico.codigo} criado.')
             return redirect('servicos:detalhe', pk=servico.pk)
@@ -149,6 +193,8 @@ def detalhe(request, pk, forms_com_erro=None):
         'form_tempo': forms_com_erro.get('tempo', TempoForm()),
         'form_preco': forms_com_erro.get('preco', PrecoForm(
             initial={'preco': centavos_para_texto(servico.preco_centavos)})),
+        'form_recebimento': RecebimentoForm(),
+        'em_aberto': max(0, (servico.preco_centavos or 0) - sum(r.valor_centavos for r in servico.recebimentos.all())),
         'aberto': next(iter(forms_com_erro), ''),
     }
     status = 422 if forms_com_erro else 200

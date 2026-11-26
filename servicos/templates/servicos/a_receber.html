@@ -1,0 +1,4 @@
+{% extends 'servicos/base.html' %}{% load dinheiro %}{% block conteudo %}
+<h1>A receber</h1>
+{% for servico, saldo in linhas %}<a class="cartao servico-item" href="{% url 'servicos:detalhe' servico.pk %}"><strong>{{ servico.cliente }} · {{ servico.codigo }}</strong><div>{{ servico.descricao|truncatechars:60 }}</div><div class="linha2">Cobrado: {{ servico.preco_centavos|reais }} · Em aberto: {{ saldo|reais }}</div></a>{% empty %}<div class="cartao vazio">Tudo recebido.</div>{% endfor %}
+{% endblock %}

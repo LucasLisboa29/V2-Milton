@@ -43,6 +43,37 @@ class AcessoTest(TestCase):
 
 
 class ServicoTest(Base):
+    def test_criar_servico_como_orcamento_pendente(self):
+        self.client.post(reverse('servicos:novo'), {'cliente':'Cliente Orçamento','descricao':'Reparo','data':'2026-10-20','local':'OFICINA','como_orcamento':'on'})
+        servico = Servico.objects.latest('id')
+        self.assertEqual(servico.situacao, Servico.Situacao.ORCAMENTO)
+        self.assertEqual(servico.situacao_orcamento, Servico.Orcamento.PENDENTE)
+
+    def test_aprovar_orcamento_inicia_servico(self):
+        servico = self.criar_servico(local='OFICINA')
+        servico.situacao = Servico.Situacao.ORCAMENTO
+        servico.situacao_orcamento = Servico.Orcamento.PENDENTE
+        servico.save()
+        resposta = self.client.post(reverse('servicos:decidir_orcamento', args=[servico.pk]), {'decisao':'APROVADO'})
+        self.assertEqual(resposta.status_code, 302)
+        servico.refresh_from_db()
+        self.assertEqual(servico.situacao, Servico.Situacao.EM_ANDAMENTO)
+        self.assertEqual(servico.situacao_orcamento, Servico.Orcamento.APROVADO)
+
+    def test_recusar_orcamento_nao_cancela_servico_e_decisao_nao_repete(self):
+        servico = self.criar_servico(local='OFICINA')
+        servico.situacao = Servico.Situacao.ORCAMENTO
+        servico.situacao_orcamento = Servico.Orcamento.PENDENTE
+        servico.save()
+        url = reverse('servicos:decidir_orcamento', args=[servico.pk])
+        self.client.post(url, {'decisao':'RECUSADO'})
+        servico.refresh_from_db()
+        self.assertEqual(servico.situacao, Servico.Situacao.ORCAMENTO)
+        self.assertEqual(servico.situacao_orcamento, Servico.Orcamento.RECUSADO)
+        self.client.post(url, {'decisao':'APROVADO'})
+        servico.refresh_from_db()
+        self.assertEqual(servico.situacao_orcamento, Servico.Orcamento.RECUSADO)
+
     def test_ct01_sem_cliente_nao_salva(self):
         resposta = self.client.post(reverse('servicos:novo'), {
             'cliente': '', 'descricao': 'x', 'data': '2026-10-20', 'local': 'OFICINA'})
