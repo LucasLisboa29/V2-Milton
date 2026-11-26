@@ -25,6 +25,7 @@ urlpatterns = [
     path('servicos/<int:pk>/', views.detalhe, name='detalhe'),
     path('servicos/<int:pk>/editar/', views.editar, name='editar'),
     path('servicos/<int:pk>/preco/', views.definir_preco, name='preco'),
+    path('servicos/<int:pk>/situacao/<str:acao>/', views.alterar_situacao, name='situacao'),
     path('servicos/<int:pk>/<tipo:tipo>/', views.adicionar_lancamento, name='adicionar'),
     path('servicos/<int:pk>/<tipo:tipo>/<int:lid>/', views.editar_lancamento, name='editar_lancamento'),
     path('servicos/<int:pk>/<tipo:tipo>/<int:lid>/remover/', views.remover_lancamento, name='remover'),
