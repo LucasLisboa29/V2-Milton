@@ -89,7 +89,7 @@ Meta: *"O Divino lança um serviço completo e vê o resultado."*
 - [x] US-09 Situação do serviço: concluir, reabrir, cancelar (com motivo) e histórico de eventos
 - [x] US-10 Recebimentos e lista "a receber"
 - [x] US-11 Orçamento (aprovar / recusar)
-- [ ] US-12 Painel do mês
+- [x] US-12 Painel do mês
 - [ ] US-07 Excluir serviço sem recebimentos
 - [ ] US-08 Filtros por período e situação
 - [ ] RF-03 Recuperação de acesso por código
@@ -137,3 +137,9 @@ Regras: serviços em andamento podem ser concluídos ou cancelados; concluídos 
 **Novidades:** é possível iniciar um serviço como orçamento e registrar a decisão do cliente. Aprovar inicia o serviço; recusar marca o orçamento como recusado sem cancelar o serviço.
 
 **Limitações:** não há campos próprios para validade ou observações do orçamento, nem envio da proposta ao cliente. A decisão não pode ser revertida pela interface; para uma nova proposta, cadastre outro orçamento.
+
+## Testar US-12 — painel do mês
+
+Abra **Painel do mês** pela barra superior. O painel resume serviços pela data do serviço e mostra valores cobrados, custos, resultado e recebimentos ocorridos no mês. Use **Anterior** e **Próximo** para navegar entre meses; também é possível abrir `?ano=2026&mes=11` diretamente.
+
+Serviços cancelados não entram nos totais. Recebimentos são somados pelo mês em que foram registrados, enquanto faturamento, custos e resultado consideram serviços pela data do serviço. Valores de resultado só incluem custos variáveis cadastrados no sistema.

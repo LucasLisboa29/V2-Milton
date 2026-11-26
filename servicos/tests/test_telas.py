@@ -151,6 +151,33 @@ class RecebimentosTest(Base):
         self.servico.refresh_from_db()
         self.assertEqual(self.servico.situacao, Servico.Situacao.EM_ANDAMENTO)
 
+
+class PainelMesTest(Base):
+    def test_painel_mensal_soma_servicos_custos_resultado_e_recebimentos(self):
+        servico = self.criar_servico(local='OFICINA', cliente='Cliente do painel')
+        servico.data = '2026-10-15'
+        servico.preco_centavos = 10000
+        servico.save(update_fields=['data', 'preco_centavos'])
+        self.lancar(servico, 'tempo', tempo='1h')  # custo de R$ 60,00
+        self.client.post(reverse('servicos:recebimento', args=[servico.pk]), {
+            'valor': '25,00', 'data': '2026-10-20',
+        })
+
+        cancelado = self.criar_servico(local='OFICINA', cliente='Cancelado no painel')
+        cancelado.data = '2026-10-18'
+        cancelado.preco_centavos = 5000
+        cancelado.situacao = Servico.Situacao.CANCELADO
+        cancelado.save(update_fields=['data', 'preco_centavos', 'situacao'])
+
+        resposta = self.client.get(reverse('servicos:painel_mes'), {'ano': '2026', 'mes': '10'})
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta.context['quantidade'], 1)
+        self.assertEqual(resposta.context['faturado'], 10000)
+        self.assertEqual(resposta.context['custos'], 6000)
+        self.assertEqual(resposta.context['resultado'], 4000)
+        self.assertEqual(resposta.context['recebido'], 2500)
+        self.assertContains(resposta, 'Cliente do painel')
+        self.assertNotContains(resposta, 'Cancelado no painel')
     def test_ct09_prejuizo_em_destaque(self):
         servico = self.criar_servico(local='OFICINA')
         self.lancar(servico, 'tempo', tempo='4h')

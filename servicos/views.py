@@ -3,6 +3,9 @@ from django.contrib.auth import views as auth_views
 from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from django.db.models import F
+from django.utils import timezone
+from calendar import monthrange
+from datetime import date
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -81,6 +84,32 @@ def a_receber(request):
     servicos = Servico.objects.filter(preco_centavos__gt=0).exclude(situacao='CANCELADO').prefetch_related('recebimentos')
     linhas = [(s, max(0, s.preco_centavos - sum(r.valor_centavos for r in s.recebimentos.all()))) for s in servicos]
     return render(request, 'servicos/a_receber.html', {'linhas': [(s,v) for s,v in linhas if v > 0]})
+
+
+def painel_mes(request):
+    hoje = timezone.localdate()
+    try:
+        ano = int(request.GET.get('ano', hoje.year))
+        mes = int(request.GET.get('mes', hoje.month))
+        if not 1 <= mes <= 12 or not 2000 <= ano <= 2100:
+            raise ValueError
+    except (TypeError, ValueError):
+        ano, mes = hoje.year, hoje.month
+    inicio = date(ano, mes, 1)
+    fim = date(ano, mes, monthrange(ano, mes)[1])
+    servicos = list(Servico.objects.filter(data__range=(inicio, fim)).exclude(situacao=Servico.Situacao.CANCELADO).prefetch_related('materiais', 'deslocamentos', 'tempos', 'recebimentos'))
+    totais = [s.resumo() for s in servicos]
+    recebimentos = [r for s in servicos for r in s.recebimentos.all() if inicio <= r.data <= fim]
+    anterior = date(ano - (mes == 1), 12 if mes == 1 else mes - 1, 1)
+    proximo = date(ano + (mes == 12), 1 if mes == 12 else mes + 1, 1)
+    return render(request, 'servicos/painel_mes.html', {
+        'mes': inicio, 'servicos': servicos, 'quantidade': len(servicos),
+        'faturado': sum(s.preco_centavos or 0 for s in servicos),
+        'custos': sum(r.custo_total for r in totais),
+        'resultado': sum((r.resultado or 0) for r in totais),
+        'recebido': sum(r.valor_centavos for r in recebimentos),
+        'anterior': anterior, 'proximo': proximo,
+    })
 
 
 @require_POST
