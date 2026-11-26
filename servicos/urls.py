@@ -26,6 +26,7 @@ urlpatterns = [
     path('servicos/<int:pk>/editar/', views.editar, name='editar'),
     path('servicos/<int:pk>/preco/', views.definir_preco, name='preco'),
     path('a-receber/', views.a_receber, name='a_receber'),
+    path('painel-mes/', views.painel_mes, name='painel_mes'),
     path('servicos/<int:pk>/recebimentos/', views.adicionar_recebimento, name='recebimento'),
     path('servicos/<int:pk>/orcamento/', views.decidir_orcamento, name='decidir_orcamento'),
     path('servicos/<int:pk>/situacao/<str:acao>/', views.alterar_situacao, name='situacao'),

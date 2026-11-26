@@ -12,6 +12,7 @@
     <a class="marca" href="{% url 'servicos:lista' %}">Custos por Serviço</a>
     <a href="{% url 'servicos:configuracao' %}">Valores</a>
     <a href="{% url 'servicos:a_receber' %}">A receber</a>
+    <a href="{% url 'servicos:painel_mes' %}">Painel do mês</a>
     <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit">Sair</button></form>
   </header>
   {% endif %}

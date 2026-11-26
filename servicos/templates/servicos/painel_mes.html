@@ -1,0 +1,6 @@
+{% extends 'servicos/base.html' %}{% load dinheiro %}{% block conteudo %}
+<h1>Painel do mês</h1>
+<nav class="navegacao-mes"><a class="botao secundario" href="?ano={{ anterior.year }}&mes={{ anterior.month }}">← Anterior</a><strong>{{ mes|date:"F Y" }}</strong><a class="botao secundario" href="?ano={{ proximo.year }}&mes={{ proximo.month }}">Próximo →</a></nav>
+<section class="cartao"><h2>Resumo do período</h2><p>Serviços: <strong>{{ quantidade }}</strong></p><p>Valores cobrados: <strong>{{ faturado|reais }}</strong></p><p>Custos: <strong>{{ custos|reais }}</strong></p><p>Resultado: <strong>{{ resultado|reais }}</strong></p><p>Recebimentos no mês: <strong>{{ recebido|reais }}</strong></p></section>
+<section class="cartao"><h2>Serviços do mês</h2>{% for s in servicos %}<p><a href="{% url 'servicos:detalhe' s.pk %}">{{ s.codigo }} · {{ s.cliente }} · {{ s.get_situacao_display }}</a></p>{% empty %}<p class="nota">Nenhum serviço neste mês.</p>{% endfor %}</section>
+{% endblock %}
