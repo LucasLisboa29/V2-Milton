@@ -68,7 +68,15 @@
     {% with form=form_preco %}{% include 'servicos/_campos.html' %}{% endwith %}
     <div class="acoes"><button type="submit" class="botao">Salvar preço</button></div>
   </form>
+  <h2>Recebimentos</h2>
+  {% for r in servico.recebimentos.all %}<p>{{ r.data|date:"d/m/Y" }} · {{ r.valor_centavos|reais }}{% if r.observacao %} · {{ r.observacao }}{% endif %}</p>{% empty %}<p class="nota">Nenhum recebimento registrado.</p>{% endfor %}
+  <p><strong>Em aberto: {{ em_aberto|reais }}</strong></p>
+  {% if servico.situacao != 'CANCELADO' and em_aberto %}
+  <form method="post" action="{% url 'servicos:recebimento' servico.pk %}">{% csrf_token %}{% with form=form_recebimento %}{% include 'servicos/_campos.html' %}{% endwith %}<div class="acoes"><button class="botao" type="submit">Registrar recebimento</button></div></form>
+  {% endif %}
 </section>
+
+{% if servico.situacao_orcamento %}<section class="cartao"><h2>{{ servico.get_situacao_orcamento_display }}</h2>{% if servico.situacao_orcamento == 'PENDENTE' %}<form method="post" action="{% url 'servicos:decidir_orcamento' servico.pk %}">{% csrf_token %}<button class="botao" name="decisao" value="APROVADO">Aprovar orçamento</button> <button class="botao secundario" name="decisao" value="RECUSADO">Recusar orçamento</button></form>{% endif %}</section>{% endif %}
 
 {% if resumo.pendencias %}
 <section class="cartao pendencias">

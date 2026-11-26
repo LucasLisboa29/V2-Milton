@@ -25,6 +25,7 @@ def _ler(campo, funcao, valor, **kwargs):
 
 
 class ServicoForm(forms.Form):
+    como_orcamento = forms.BooleanField(label='Cadastrar como orçamento', required=False)
     cliente = forms.CharField(
         label='Cliente', min_length=2, max_length=100,
         error_messages={'required': 'Informe o nome do cliente.',
@@ -136,6 +137,18 @@ class ConfiguracaoForm(forms.Form):
 
     def clean_valor_hora(self):
         return _ler('valor_hora', dominio.ler_dinheiro, self.cleaned_data['valor_hora'], permitir_zero=False)
+
+
+class RecebimentoForm(forms.Form):
+    valor = _campo_texto('Valor recebido (R$)', '100,00')
+    data = forms.DateField(label='Data', initial=timezone.localdate, widget=forms.DateInput(attrs={'type': 'date'}))
+    observacao = forms.CharField(label='Observação (opcional)', max_length=200, required=False)
+    def clean_valor(self):
+        return _ler('valor', dominio.ler_dinheiro, self.cleaned_data['valor'], permitir_zero=False)
+
+
+class DecisaoOrcamentoForm(forms.Form):
+    decisao = forms.ChoiceField(choices=[('APROVADO','Aprovar orçamento'),('RECUSADO','Recusar orçamento')])
 
 
 def centavos_para_texto(centavos):
