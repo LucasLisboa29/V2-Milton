@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
-from servicos.models import Cliente, Configuracao, EventoServico, Servico, Tempo
+from servicos.models import Cliente, Configuracao, EventoServico, Recebimento, Servico, Tempo
 
 
 class Base(TestCase):
@@ -120,6 +120,36 @@ class CicloCompletoTest(Base):
         self.assertContains(resposta, 'Resultado do serviço: R$ 112,00')
         self.assertContains(resposta, '25 km × R$ 1,20 = R$ 30,00')
         self.assertContains(resposta, 'despesas fixas não entram')
+
+
+class RecebimentosTest(Base):
+    def setUp(self):
+        super().setUp()
+        self.servico = self.criar_servico(local='OFICINA')
+        self.servico.preco_centavos = 10000
+        self.servico.save(update_fields=['preco_centavos'])
+        self.url = reverse('servicos:recebimento', args=[self.servico.pk])
+
+    def test_recebimento_parcial_mantem_saldo_e_lista_a_receber(self):
+        self.client.post(self.url, {'valor': '40,00', 'data': '2026-11-01'})
+        self.servico.refresh_from_db()
+        self.assertEqual(self.servico.recebimentos.get().valor_centavos, 4000)
+        self.assertEqual(self.servico.situacao, Servico.Situacao.EM_ANDAMENTO)
+        resposta = self.client.get(reverse('servicos:a_receber'))
+        self.assertContains(resposta, 'R$ 60,00')
+
+    def test_recebimento_total_marca_recebido_e_some_da_lista(self):
+        self.client.post(self.url, {'valor': '100,00', 'data': '2026-11-01'})
+        self.servico.refresh_from_db()
+        self.assertEqual(self.servico.situacao, Servico.Situacao.RECEBIDO)
+        self.assertEqual(self.servico.recebimentos.count(), 1)
+        self.assertNotContains(self.client.get(reverse('servicos:a_receber')), self.servico.cliente.nome)
+
+    def test_nao_aceita_valor_acima_do_saldo(self):
+        self.client.post(self.url, {'valor': '100,01', 'data': '2026-11-01'})
+        self.assertFalse(Recebimento.objects.filter(servico=self.servico).exists())
+        self.servico.refresh_from_db()
+        self.assertEqual(self.servico.situacao, Servico.Situacao.EM_ANDAMENTO)
 
     def test_ct09_prejuizo_em_destaque(self):
         servico = self.criar_servico(local='OFICINA')

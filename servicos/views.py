@@ -85,18 +85,24 @@ def a_receber(request):
 
 @require_POST
 def adicionar_recebimento(request, pk):
-    form=RecebimentoForm(request.POST)
-    servico=get_object_or_404(Servico,pk=pk)
-    if form.is_valid():
-        Recebimento.objects.create(servico=servico, valor_centavos=form.cleaned_data['valor'], data=form.cleaned_data['data'], observacao=form.cleaned_data['observacao'])
-        total=sum(r.valor_centavos for r in servico.recebimentos.all())+form.cleaned_data['valor']
-        if servico.preco_centavos and total >= servico.preco_centavos:
-            servico.situacao=Servico.Situacao.RECEBIDO
-            servico.save(update_fields=['situacao'])
-        messages.success(request,'Recebimento registrado.')
-    else:
-        messages.error(request,'Informe um valor e uma data válidos.')
-    return redirect('servicos:detalhe',pk=pk)
+    form = RecebimentoForm(request.POST)
+    with transaction.atomic():
+        servico = get_object_or_404(Servico.objects.select_for_update(), pk=pk)
+        recebidos = sum(r.valor_centavos for r in servico.recebimentos.all())
+        saldo = max(0, (servico.preco_centavos or 0) - recebidos)
+        if not form.is_valid():
+            messages.error(request, 'Informe um valor e uma data válidos.')
+        elif servico.situacao == Servico.Situacao.CANCELADO or saldo == 0:
+            messages.error(request, 'Este serviço não possui saldo disponível para receber.')
+        elif form.cleaned_data['valor'] > saldo:
+            messages.error(request, 'O recebimento não pode ser maior que o saldo em aberto.')
+        else:
+            Recebimento.objects.create(servico=servico, valor_centavos=form.cleaned_data['valor'], data=form.cleaned_data['data'], observacao=form.cleaned_data['observacao'])
+            if form.cleaned_data['valor'] == saldo:
+                servico.situacao = Servico.Situacao.RECEBIDO
+                servico.save(update_fields=['situacao'])
+            messages.success(request, 'Recebimento registrado.')
+    return redirect('servicos:detalhe', pk=pk)
 
 
 @require_POST

@@ -180,4 +180,4 @@ Já traz login, banco e formulários prontos, o que coube no prazo de um Sprint.
 
 ## 6. Sprint 2
 
-US-09 Situação do serviço está implementada. Recebimentos e lista "a receber", orçamento, painel do mês, excluir serviço, filtros por período e situação e recuperação de acesso ficam para as próximas histórias. Lista completa no `README.md`.
+US-09, US-10 (recebimentos e lista "a receber") e US-11 (aprovar/recusar orçamento) estão implementadas. Painel do mês, excluir serviço, filtros por período e situação e recuperação de acesso ficam para as próximas histórias. Lista completa no `README.md`.

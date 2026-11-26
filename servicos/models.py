@@ -84,7 +84,6 @@ class Servico(models.Model):
         APROVADO = 'APROVADO', 'Aprovado'
         RECUSADO = 'RECUSADO', 'Recusado'
     situacao_orcamento = models.CharField(max_length=10, choices=Orcamento.choices, null=True, blank=True)
-    recebido_centavos = models.PositiveIntegerField(default=0)
     # Incrementada a cada alteração, para não sobrescrever edição feita em outra aba (UC08-E2).
     versao = models.PositiveIntegerField(default=1)
     criado_em = models.DateTimeField(auto_now_add=True)

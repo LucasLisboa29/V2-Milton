@@ -87,8 +87,8 @@ Meta: *"O Divino lança um serviço completo e vê o resultado."*
 ## Sprint 2 — a fazer
 
 - [x] US-09 Situação do serviço: concluir, reabrir, cancelar (com motivo) e histórico de eventos
-- [ ] US-10 Recebimentos e lista "a receber"
-- [ ] US-11 Orçamento (aprovar / recusar)
+- [x] US-10 Recebimentos e lista "a receber"
+- [x] US-11 Orçamento (aprovar / recusar)
 - [ ] US-12 Painel do mês
 - [ ] US-07 Excluir serviço sem recebimentos
 - [ ] US-08 Filtros por período e situação
@@ -113,3 +113,27 @@ Meta: *"O Divino lança um serviço completo e vê o resultado."*
 5. Tente cancelar sem motivo: o formulário mostra uma validação e o estado não muda.
 
 Regras: serviços em andamento podem ser concluídos ou cancelados; concluídos podem ser reabertos ou cancelados; cancelados não podem ser reabertos. Cada transição é enviada por POST e registrada no histórico.
+
+## Testar US-10 — recebimentos e lista “A receber”
+
+1. Rode `python manage.py migrate` e `python manage.py runserver`, entre no sistema e abra um serviço.
+2. No detalhe, salve um **Preço cobrado** maior que zero, por exemplo, R$ 100,00.
+3. Registre um recebimento parcial, como R$ 40,00. Ele aparece no histórico e o saldo em aberto fica em R$ 60,00.
+4. Abra **A receber** na barra superior e confira o serviço e seu saldo.
+5. Registre os R$ 60,00 restantes. O serviço passa para **Recebido** e deixa a lista **A receber**.
+6. Tente registrar um valor acima do saldo: o sistema recusa e não grava o recebimento.
+
+**Novidades:** cada recebimento guarda valor, data e observação; o detalhe mostra o histórico e calcula o saldo com base nos recebimentos registrados.
+
+**Limitações:** o serviço precisa ter preço maior que zero para entrar em **A receber**. A lista mostra somente serviços com saldo positivo, não um histórico geral de pagamentos. Nesta versão, recebimentos não podem ser editados ou removidos pela interface.
+
+## Testar US-11 — orçamento
+
+1. Na tela **Novo serviço**, marque **Cadastrar como orçamento** e salve. O serviço deve aparecer como **Orçamento pendente**.
+2. Abra o serviço e escolha **Aprovar orçamento**. Ele passa para **Em andamento**, e a decisão aparece como aprovada.
+3. Crie outro orçamento e escolha **Recusar orçamento**. Ele fica como **Orçamento recusado**.
+4. Depois da decisão, os botões de aprovar e recusar não aparecem mais; uma tentativa repetida também é recusada.
+
+**Novidades:** é possível iniciar um serviço como orçamento e registrar a decisão do cliente. Aprovar inicia o serviço; recusar marca o orçamento como recusado sem cancelar o serviço.
+
+**Limitações:** não há campos próprios para validade ou observações do orçamento, nem envio da proposta ao cliente. A decisão não pode ser revertida pela interface; para uma nova proposta, cadastre outro orçamento.
