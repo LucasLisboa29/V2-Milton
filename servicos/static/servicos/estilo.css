@@ -121,6 +121,9 @@ table.resumo tr.total td { font-weight: 700; }
 .lancamento .conta { color: var(--suave); font-size: .9rem; }
 .lancamento .botoes { display: flex; gap: 6px; flex-shrink: 0; }
 .lancamento form { margin: 0; }
+.evento { padding: 8px 0; border-bottom: 1px solid var(--borda); }
+.evento:last-child { border-bottom: 0; }
+.cartao form { margin: 0; }
 
 details.lancar { margin-top: 8px; }
 details.lancar summary { list-style: none; }
